@@ -8,8 +8,7 @@ public class Archon extends RobotBase {
     private State state = State.SEARCH;
     private MapLocation[] archons;
     private MapLocation flux_to_get;
-    private int[] staticArchons = new int[6];
-    private Robot worker = null;
+    private int[] staticArchons = new int[6];    
 
     enum State {
         GET_NEAREST,
@@ -33,6 +32,14 @@ public class Archon extends RobotBase {
         while(rc.isMovementActive()) {
             rc.yield();
         }
+        if (Clock.getRoundNum() % 2 == 0) {
+            sense();
+            transfer();
+            if (e_nearby.size() > a_soldiers - 2 && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2) {
+                spawn(RobotType.SOLDIER);
+            }
+        }
+
         switch (state) {
             case SEARCH:
                 search();
@@ -111,32 +118,50 @@ public class Archon extends RobotBase {
     }
 
     void found() throws GameActionException {
-        Direction d = rc.getDirection();
+        spawn(RobotType.WORKER);
+        state = State.GATHER;
+    }
 
-        while (rc.senseTerrainTile(rc.getLocation().add(d)).getType() != TerrainTile.TerrainType.LAND) {
+    private void spawn(RobotType rt) {
+        boolean done = false;
+        if (rt.isAirborne()) {
+
+        } else {
+            while (! done) {
+                try {
+                    done = spawnGround(rt);
+                } catch (Exception e) {
+                }
+            }
+        }
+        rc.yield();
+    }
+
+    private boolean spawnGround(RobotType rt) throws GameActionException {
+        Direction d = rc.getDirection();
+        MapLocation l = rc.getLocation();
+
+        while (rc.senseTerrainTile(l.add(d)).getType() != TerrainTile.TerrainType.LAND || rc.senseGroundRobotAtLocation(l.add(d)) != null) {
             d = d.rotateRight();
         }
 
         if (! d.equals(rc.getDirection())) {
             rc.setDirection(d);
-        } else {
-            while (RobotType.WORKER.spawnCost() > rc.getEnergonLevel()) {
-                rc.yield();
-            }
-            rc.spawn(RobotType.WORKER);
             rc.yield();
-            state = State.GATHER;            
-            worker = rc.senseGroundRobotAtLocation(rc.getLocation().add(rc.getDirection()));
         }
-    }
+        while (rt.spawnCost() > rc.getEnergonLevel()) {
+            rc.yield();
+        }
+        rc.spawn(rt);
 
+        return true;
+    }
+    
     private void gather() {
-        try {
-            RobotInfo ri = rc.senseRobotInfo(worker);
-            if (rc.getLocation().isAdjacentTo(ri.location) || rc.getLocation().equals(ri.location)) {
-                rc.transferEnergon(rc.getEnergonLevel() * 2/3, ri.location, RobotLevel.ON_GROUND);
-            }            
-        } catch (GameActionException e) {
+        if (Clock.getRoundNum() % 10 == 0) {
+            if (a_workers < 2) {
+                spawn(RobotType.WORKER);
+            }
         }
     }
 

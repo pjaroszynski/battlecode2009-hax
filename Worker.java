@@ -10,7 +10,8 @@ public class Worker extends RobotBase {
     enum State {
         SEARCH,
         GET_BLOCK,
-        GET_BACK
+        GET_BACK,
+        UNLOAD
     }
 
     public Worker(RobotController rc) {
@@ -28,7 +29,7 @@ public class Worker extends RobotBase {
 
     protected void go() throws GameActionException {
         rc.setIndicatorString(0, state.toString());
-        while(rc.isMovementActive()) {
+        while (rc.isMovementActive()) {
             rc.yield();
         }
         switch (state) {
@@ -41,11 +42,14 @@ public class Worker extends RobotBase {
             case GET_BLOCK:
                 get_block();
                 break;
+            case UNLOAD:
+                unload();
+                break;
         }
     }
 
     private void search() throws GameActionException {
-        if (rc.getEventualEnergonLevel() < RobotType.WORKER.maxEnergon()) {
+        if (rc.getEventualEnergonLevel() < RobotType.WORKER.maxEnergon() / 2) {
             state = State.GET_BACK;
             return;
         }
@@ -53,7 +57,7 @@ public class Worker extends RobotBase {
 
         for (MapLocation l : blocks) {
             if (l.distanceSquaredTo(archon) > 8) {
-                if (target == null || rc.getLocation().distanceSquaredTo(l) < rc.getLocation().distanceSquaredTo(target))
+                if (target == null || (l != target && rc.getLocation().distanceSquaredTo(l) < rc.getLocation().distanceSquaredTo(target)))
                     target = l;
             }
         }
@@ -72,11 +76,15 @@ public class Worker extends RobotBase {
                 rc.setDirection(rc.getLocation().directionTo(target));
                 return;
             }
-            rc.moveForward();
+            if (rc.canMove(rc.getDirection())) {
+                rc.moveForward();
+            }            
+        } else if (rc.canLoadBlockFromLocation(target)) {
+                rc.loadBlockFromLocation(target);
+                state = State.GET_BACK;
+                target = null;
         } else {
-            rc.loadBlockFromLocation(target);
-            state = State.GET_BACK;
-            target = null;
+            state = State.SEARCH;
         }
     }
 
@@ -87,42 +95,48 @@ public class Worker extends RobotBase {
                 return;
             }
 
-            if (rc.canMove(rc.getDirection())) {
-                rc.moveForward();
+            if (! rc.canMove(rc.getDirection())) {
+                target = rc.getLocation();
+                state = State.UNLOAD;
             } else {
-                rc.moveBackward();
-                unload(rc.getLocation());
+                rc.moveForward();
             }
         } else {
-            while (rc.getNumBlocks() > 0) {
-                if (rc.canUnloadBlockToLocation(archon)) {
-                    rc.unloadBlockToLocation(archon);
-                } else {
-                    Direction d = rc.getDirection();
-
-                    while (! rc.canMove(d)) {
-                        d.rotateRight();
-                    }
-                    if (d != rc.getDirection()) {
-                        rc.setDirection(d);
-                        rc.yield();
-                    }
-
-                    rc.moveForward();
-                    unload(rc.getLocation());
-                }
-            }
-            while (rc.getEventualEnergonLevel() < RobotType.WORKER.maxEnergon()) {
-                rc.yield();
-            }
-            state = State.SEARCH;
+            target = archon;
+            state = State.UNLOAD;
         }
     }
 
-    private void unload(MapLocation l) throws GameActionException {
-        while (! rc.canUnloadBlockToLocation(l) || rc.getCurrentAction() != ActionType.IDLE) {
-            rc.yield();
+    private void unload() throws GameActionException {
+        if (rc.getNumBlocks() > 0) {         
+            if (target.equals(rc.getLocation())) {
+
+                Direction d = rc.getDirection();
+                while (! rc.canMove(d)) {
+                    d = d.rotateRight();
+                    if (d.equals(rc.getDirection())) {
+                        rc.suicide();
+                    }
+                }
+                
+                if (! d.equals(rc.getDirection())) {
+                    rc.setDirection(d);
+                    return;
+                }
+                rc.moveForward();
+                return;
+            }
+
+            if (! rc.canUnloadBlockToLocation(target)) {
+                rc.suicide();
+            }
+
+            while (rc.getCurrentAction() != ActionType.IDLE) {
+                rc.yield();
+            }
+            rc.unloadBlockToLocation(target);
         }
-        rc.unloadBlockToLocation(l);
+        target = null;
+        state = State.SEARCH;
     }
 }
