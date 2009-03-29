@@ -2,10 +2,13 @@ package hax;
 
 import battlecode.common.*;
 
+import java.util.HashSet;
+
 public class Worker extends RobotBase {
     private MapLocation archon;
     private MapLocation target;
     private State state = State.GET_BACK;
+    private HashSet<MapLocation> bad_blocks = new HashSet<MapLocation>();
 
     enum State {
         SEARCH,
@@ -57,7 +60,7 @@ public class Worker extends RobotBase {
 
         for (MapLocation l : blocks) {
             if (l.distanceSquaredTo(archon) > 4) {
-                if (target == null || (l != target && archon.distanceSquaredTo(l) < archon.distanceSquaredTo(target)))
+                if (target == null || (! bad_blocks.contains(l) && archon.distanceSquaredTo(l) < archon.distanceSquaredTo(target)))
                     target = l;
             }
         }
@@ -73,6 +76,7 @@ public class Worker extends RobotBase {
     private void get_block() throws GameActionException {
         switch (moveToAdjacent(target)) {
             case BLOCKED:
+                bad_blocks.add(target);
                 state = State.SEARCH;
                 return;
             case DONE:
@@ -84,7 +88,9 @@ public class Worker extends RobotBase {
             rc.loadBlockFromLocation(target);
             state = State.GET_BACK;
             target = null;
+            bad_blocks.clear();
         } else {
+            bad_blocks.add(target);
             state = State.SEARCH;
         }
     }

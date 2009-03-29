@@ -159,7 +159,7 @@ public class Archon extends RobotBase {
     
     private void gather() {
         if (Clock.getRoundNum() % 10 == 0) {
-            if (a_workers < 2 && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2) {
+            if (a_workers < 3 && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2) {
                 spawn(RobotType.WORKER);
             }
         }
