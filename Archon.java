@@ -29,7 +29,7 @@ public class Archon extends RobotBase {
 
     protected void go() throws GameActionException {
         rc.setIndicatorString(0, state.toString());
-        while(rc.isMovementActive()) {
+        while (rc.isMovementActive()) {
             rc.yield();
         }
         if (Clock.getRoundNum() % 2 == 0) {
@@ -159,7 +159,7 @@ public class Archon extends RobotBase {
     
     private void gather() {
         if (Clock.getRoundNum() % 10 == 0) {
-            if (a_workers < 2) {
+            if (a_workers < 2 && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2) {
                 spawn(RobotType.WORKER);
             }
         }

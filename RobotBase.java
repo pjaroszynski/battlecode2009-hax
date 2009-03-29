@@ -23,11 +23,17 @@ public abstract class RobotBase {
         
     protected final HashMap<Robot, RobotInfo> r_info = new HashMap<Robot, RobotInfo>();
 
+    protected enum MoveState {
+        MOVING,
+        DONE,
+        BLOCKED
+    }
+
     public RobotBase(RobotController rc) {
         this.rc = rc;
         this.startLocation = rc.getLocation();
         rand = new Random(rc.getLocation().hashCode());
-        System.out.println(rc.getRobotType().toString() + " @ " + rc.getLocation());
+        //System.out.println(rc.getRobotType().toString() + " @ " + rc.getLocation());
     }
 
     public void play() throws GameActionException {
@@ -112,6 +118,10 @@ public abstract class RobotBase {
     }
 
     protected final void transfer() throws GameActionException {
+        if (rc.getEnergonLevel() < rc.getMaxEnergonLevel() / 3) {
+            return;
+        }
+
         double min = Double.MAX_VALUE;
         Robot minr = null;
         RobotInfo minri = null;
@@ -127,7 +137,7 @@ public abstract class RobotBase {
             }
         }
         if (minr != null) {
-            double e = Math.min(minri.maxEnergon + GameConstants.ENERGON_RESERVE_SIZE - min, GameConstants.ENERGON_RESERVE_SIZE);
+            double e = GameConstants.ENERGON_RESERVE_SIZE - minri.energonReserve;
             e = Math.min(e, rc.getEnergonLevel() / 2);
             if (e > GameConstants.ENERGON_RESERVE_SIZE / 2) {
                 rc.transferEnergon(e, minri.location, minr.getRobotLevel());
@@ -164,6 +174,37 @@ public abstract class RobotBase {
             rc.setDirection(d);
         } else {
             rc.moveForward();
+        }
+    }
+
+    protected MoveState moveToAdjacent(MapLocation l) throws GameActionException {
+        if (rc.getLocation().isAdjacentTo(l)) {
+            return MoveState.DONE;
+        }
+        if (! rc.getLocation().equals(l)) {
+            if (! rc.getDirection().equals(rc.getLocation().directionTo(l))) {
+                rc.setDirection(rc.getLocation().directionTo(l));
+                return MoveState.MOVING;
+            }
+        } else {
+            Direction d = rc.getDirection();
+            while (! rc.canMove(d)) {
+                d = d.rotateRight();
+                if (rc.getDirection() == d) {
+                    return MoveState.BLOCKED;
+                }
+            }
+            if (! rc.getDirection().equals(d)) {
+                rc.setDirection(d);
+                return MoveState.MOVING;
+            }
+        }
+
+        if (rc.canMove(rc.getDirection())) {
+            rc.moveForward();
+            return MoveState.MOVING;
+        } else {
+            return MoveState.BLOCKED;
         }
     }
 }

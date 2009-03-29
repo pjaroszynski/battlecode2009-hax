@@ -4,8 +4,7 @@ import battlecode.common.*;
 
 public class RobotPlayer implements Runnable {
 
-   private
-   RobotBase robot;
+   private RobotBase robot;
 
     public RobotPlayer(RobotController rc) {
         switch (rc.getRobotType()) {

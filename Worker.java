@@ -56,8 +56,8 @@ public class Worker extends RobotBase {
         MapLocation[] blocks = rc.senseNearbyBlocks();
 
         for (MapLocation l : blocks) {
-            if (l.distanceSquaredTo(archon) > 8) {
-                if (target == null || (l != target && rc.getLocation().distanceSquaredTo(l) < rc.getLocation().distanceSquaredTo(target)))
+            if (l.distanceSquaredTo(archon) > 4) {
+                if (target == null || (l != target && archon.distanceSquaredTo(l) < archon.distanceSquaredTo(target)))
                     target = l;
             }
         }
@@ -71,64 +71,53 @@ public class Worker extends RobotBase {
     }
 
     private void get_block() throws GameActionException {
-        if (! rc.getLocation().isAdjacentTo(target)) {
-            if (! rc.getDirection().equals(rc.getLocation().directionTo(target))) {
-                rc.setDirection(rc.getLocation().directionTo(target));
+        switch (moveToAdjacent(target)) {
+            case BLOCKED:
+                state = State.SEARCH;
                 return;
-            }
-            if (rc.canMove(rc.getDirection())) {
-                rc.moveForward();
-            }            
-        } else if (rc.canLoadBlockFromLocation(target)) {
-                rc.loadBlockFromLocation(target);
-                state = State.GET_BACK;
-                target = null;
+            case DONE:
+                break;
+            case MOVING:
+                return;
+        }
+        if (rc.canLoadBlockFromLocation(target)) {
+            rc.loadBlockFromLocation(target);
+            state = State.GET_BACK;
+            target = null;
         } else {
             state = State.SEARCH;
         }
     }
 
     private void get_back() throws GameActionException {
-        if (! rc.getLocation().isAdjacentTo(archon) && ! rc.getLocation().equals(archon)) {
-            if (! rc.getDirection().equals(rc.getLocation().directionTo(archon))) {
-                rc.setDirection(rc.getLocation().directionTo(archon));
-                return;
-            }
-
-            if (! rc.canMove(rc.getDirection())) {
+        switch (moveToAdjacent(archon)) {
+            case BLOCKED:
                 target = rc.getLocation();
                 state = State.UNLOAD;
-            } else {
-                rc.moveForward();
-            }
-        } else {
-            target = archon;
-            state = State.UNLOAD;
+                break;
+            case DONE:
+                target = archon;
+                state = State.UNLOAD;
+                break;
+            case MOVING:
+                return;
         }
     }
 
     private void unload() throws GameActionException {
-        if (rc.getNumBlocks() > 0) {         
-            if (target.equals(rc.getLocation())) {
-
-                Direction d = rc.getDirection();
-                while (! rc.canMove(d)) {
-                    d = d.rotateRight();
-                    if (d.equals(rc.getDirection())) {
-                        rc.suicide();
-                    }
-                }
-                
-                if (! d.equals(rc.getDirection())) {
-                    rc.setDirection(d);
+        if (rc.getNumBlocks() > 0) {
+            switch (moveToAdjacent(target)) {
+                case BLOCKED:
+                    rc.suicide();
                     return;
-                }
-                rc.moveForward();
-                return;
+                case DONE:
+                    break;
+                case MOVING:
+                    return;
             }
-
             if (! rc.canUnloadBlockToLocation(target)) {
-                rc.suicide();
+                target = rc.getLocation();
+                return;
             }
 
             while (rc.getCurrentAction() != ActionType.IDLE) {
