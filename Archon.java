@@ -42,6 +42,10 @@ public class Archon extends RobotBase {
         
         if(!e_nearby.isEmpty()) {
         	state = State.DEFENCE;
+        	if(rc.canBurnFlux() && rc.getEnergonLevel() < 2 * rc.getMaxEnergonLevel() / 3){
+        		rc.burnFlux();
+        	}
+        	return;
         } else if (state == State.DEFENCE){
         	if(rc.senseDirectionToOwnedFluxDeposit() == Direction.OMNI)
         		state = State.FOUND;
