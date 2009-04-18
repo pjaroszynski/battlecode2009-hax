@@ -7,18 +7,12 @@ import java.util.HashSet;
 public class Worker extends RobotBase {
     private MapLocation archon;
     private MapLocation target;
-    private State state = State.GET_BACK;
     private HashSet<MapLocation> bad_blocks = new HashSet<MapLocation>();
 
-    enum State {
-        SEARCH,
-        GET_BLOCK,
-        GET_BACK,
-        UNLOAD
-    }
 
     public Worker(RobotController rc) {
         super(rc);
+        state = State.GET_BACK;
     }
 
     protected void init() throws GameActionException {

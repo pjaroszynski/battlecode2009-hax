@@ -5,23 +5,16 @@ import battlecode.common.*;
 import java.util.Random;
 
 public class Archon extends RobotBase {
-    private State state = State.SEARCH;
     private MapLocation[] archons;
     private MapLocation flux_to_get;
     private int[] staticArchons = new int[6];    
     private int spawned_soldiers = 0;
 
-    enum State {
-        GET_NEAREST,
-        GET_FLUX,        
-        SEARCH,
-        FOUND,
-        GATHER,
-        DONE
-    }
+    
 
     public Archon(RobotController rc) {
         super(rc);
+        state = State.SEARCH;
     }
 
     public void init() {
@@ -45,6 +38,15 @@ public class Archon extends RobotBase {
             {
             	spawn(RobotType.CANNON); 
             }         
+        }
+        
+        if(!e_nearby.isEmpty()) {
+        	state = State.DEFENCE;
+        } else if (state == State.DEFENCE){
+        	if(rc.senseDirectionToOwnedFluxDeposit() == Direction.OMNI)
+        		state = State.FOUND;
+        	else
+        		state = State.SEARCH;
         }
 
         switch (state) {

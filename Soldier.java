@@ -1,24 +1,17 @@
 package hax;
 
-import hax.Cannon.State;
-import hax.RobotBase.Position;
-
 import java.util.HashSet;
 
 import battlecode.common.*;
 
 public class Soldier extends RobotBase {
-    private State state = State.SEARCH;
 
     public Soldier(RobotController rc) {
         super(rc);
+        state = State.SEARCH;
     }
 
-    enum State {
-        ATTACK_G,
-        ATTACK_A,
-        SEARCH
-    }
+ 
 
     protected void init() throws GameActionException {
     }
@@ -29,9 +22,12 @@ public class Soldier extends RobotBase {
             rc.yield();
         }
 
+        Position pos = Position.NONE;
+      
         sense();
         
-        Position pos = receiveTargets();
+        if(e_nearby.isEmpty())
+        	pos = receiveTargets();
 
         switch(pos)
         {

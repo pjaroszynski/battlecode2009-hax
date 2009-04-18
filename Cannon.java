@@ -5,16 +5,12 @@ import java.util.HashSet;
 import battlecode.common.*;
 
 public class Cannon extends RobotBase {
-    private State state = State.ATTACK_A;
 
     public Cannon(RobotController rc) {
         super(rc);
+        state = State.ATTACK_A;
     }
 
-    enum State {
-        ATTACK_G,
-        ATTACK_A
-    }
  
 
     protected void init() throws GameActionException {

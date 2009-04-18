@@ -7,6 +7,7 @@ import java.util.*;
 public abstract class RobotBase {
     protected final RobotController rc;
     protected final MapLocation startLocation;
+    protected State state;
     protected Random rand;
 
     protected final HashSet<Robot> allies = new HashSet<Robot>();
@@ -36,6 +37,21 @@ public abstract class RobotBase {
     	GROUND, //1
     	NONE,
     	BOTH
+    }
+    
+    protected enum State {
+        GET_NEAREST,
+        GET_FLUX,        
+        SEARCH,
+        FOUND,
+        GATHER,
+        DONE,
+        DEFENCE,
+        ATTACK_G,
+        ATTACK_A,
+        GET_BLOCK,
+        GET_BACK,
+        UNLOAD
     }
 
     public RobotBase(RobotController rc) {
@@ -148,6 +164,8 @@ public abstract class RobotBase {
 
         for (Robot r : a_nearby) {
             RobotInfo ri = r_info.get(r);
+            if(state == State.DEFENCE && ri.type == RobotType.WORKER)//if defence => dont charge workers
+            	continue;
             if (ri.location.isAdjacentTo(rc.getLocation()) || ri.location.equals(rc.getLocation())) {
                 if (min > ri.energonLevel + ri.energonReserve) {
                     min = ri.energonLevel + ri.energonReserve;
@@ -159,7 +177,9 @@ public abstract class RobotBase {
         if (minr != null) {
             double e = GameConstants.ENERGON_RESERVE_SIZE - minri.energonReserve;
             e = Math.min(e, rc.getEnergonLevel() / 2);
-            if (e > GameConstants.ENERGON_RESERVE_SIZE / 2) {
+            if (e > GameConstants.ENERGON_RESERVE_SIZE / 2 
+            	&& rc.senseGroundRobotAtLocation(minri.location) != null)
+            {
                 rc.transferEnergon(e, minri.location, minr.getRobotLevel());
             }
         }
