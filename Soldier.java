@@ -1,5 +1,10 @@
 package hax;
 
+import hax.Cannon.State;
+import hax.RobotBase.Position;
+
+import java.util.HashSet;
+
 import battlecode.common.*;
 
 public class Soldier extends RobotBase {
@@ -10,7 +15,8 @@ public class Soldier extends RobotBase {
     }
 
     enum State {
-        ATTACK,
+        ATTACK_G,
+        ATTACK_A,
         SEARCH
     }
 
@@ -24,6 +30,24 @@ public class Soldier extends RobotBase {
         }
 
         sense();
+        
+        Position pos = receiveTargets();
+
+        switch(pos)
+        {
+        	case NONE:
+        		state = State.SEARCH;
+        		break;
+        	case AIR:
+        		state = State.ATTACK_A;
+        		break;
+        	case GROUND:
+        		state = State.ATTACK_G;
+        		break;
+        	case BOTH:
+        		state = State.ATTACK_G;  //ground priority
+        		break;
+        }
 
         if (Clock.getRoundNum() % 5 == 0) {
             transfer();
@@ -32,6 +56,12 @@ public class Soldier extends RobotBase {
         switch (state) {
             case SEARCH:
                 search();
+                break;
+            case ATTACK_G:
+                attack(Position.GROUND, targets_g);
+                break;
+            case ATTACK_A:
+            	attack(Position.AIR, targets_g);
                 break;
         }
     }
@@ -64,4 +94,6 @@ public class Soldier extends RobotBase {
             rc.moveForward();
         }
     }
+    
+
 }

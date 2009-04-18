@@ -17,6 +17,9 @@ public class RobotPlayer implements Runnable {
             case SOLDIER:
                 robot = new Soldier(rc);
                 break;
+            case CANNON:
+                robot = new Cannon(rc);
+                break;
             default:
                 System.out.print("No robot for " + rc.getRobotType().toString());
         }

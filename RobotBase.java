@@ -17,6 +17,8 @@ public abstract class RobotBase {
 
     protected final HashSet<Robot> enemies = new HashSet<Robot>();
     protected final HashSet<Robot> e_nearby = new HashSet<Robot>();
+    protected final HashSet<MapLocation> targets_g = new HashSet<MapLocation>();
+    protected final HashSet<MapLocation> targets_a = new HashSet<MapLocation>();
     protected int e_archons = 0;
     protected int e_workers = 0;
     protected int e_soldiers = 0;
@@ -27,6 +29,13 @@ public abstract class RobotBase {
         MOVING,
         DONE,
         BLOCKED
+    }
+    
+    enum Position {
+    	AIR, //0
+    	GROUND, //1
+    	NONE,
+    	BOTH
     }
 
     public RobotBase(RobotController rc) {
@@ -63,11 +72,17 @@ public abstract class RobotBase {
         e_archons = 0;
         e_workers = 0;
         e_soldiers = 0;
+        targets_a.clear();
+        targets_g.clear();
 
         doSense(rc.senseNearbyGroundRobots());
         doSense(rc.senseNearbyAirRobots());
     }
 
+    protected final boolean is_air(RobotType rt){
+    	return rt == RobotType.ARCHON || rt == RobotType.SCOUT;
+    }
+    
     protected final void doSense(Robot[] robots) throws GameActionException {
         for (Robot r : robots) {
             if (rc.canSenseObject(r)) {
@@ -76,6 +91,11 @@ public abstract class RobotBase {
                 if (ri.team != rc.getTeam()) {
                     enemies.add(r);
                     e_nearby.add(r);
+                    if(is_air(ri.type)) {
+                    	targets_a.add(ri.location);
+                    } else {
+                    	targets_g.add(ri.location);
+                    }
                     switch (ri.type) {
                         case ARCHON:
                             ++e_archons;
@@ -207,4 +227,84 @@ public abstract class RobotBase {
             return MoveState.BLOCKED;
         }
     }
+    
+    protected void attack(Position pos, HashSet<MapLocation> _targets) throws GameActionException {
+        int dist = Integer.MAX_VALUE;
+        MapLocation target = null;
+        //find close target
+        for (MapLocation l : _targets) {
+            if (dist > l.distanceSquaredTo(rc.getLocation())) {
+                dist = l.distanceSquaredTo(rc.getLocation());
+                target = l;
+            }
+        }
+
+        if (target == null) {
+            wander(2, 10);
+        } else if (rc.canAttackSquare(target)) {
+            if (rc.isAttackActive()) {
+                return;
+            }
+            if (pos == Position.AIR) {
+                rc.attackAir(target);
+            } else {
+                rc.attackGround(target);
+            }
+        } else if (rc.getLocation().directionTo(target) != rc.getDirection()) {
+            rc.setDirection(rc.getLocation().directionTo(target));
+        } else if (rc.canMove(rc.getDirection())) {
+            rc.moveForward();
+        }
+    }
+    
+    //communication
+    private void doSendTargets(Position pos) throws GameActionException {
+    	Message m = new Message();
+    	m.locations = new MapLocation[0];
+    	m.ints = new int[2];
+		m.ints[0] = rc.getTeam().hashCode();
+		if(pos == Position.AIR) {
+			m.ints[1] = 0;
+			m.locations = targets_a.toArray(m.locations);
+		} else {
+			m.ints[1] = 1;
+			m.locations = targets_g.toArray(m.locations);
+		}
+		rc.broadcast(m);
+		rc.yield();
+    }
+    
+    protected void sendTargets() throws GameActionException {
+    	if(!targets_a.isEmpty())
+    		doSendTargets(Position.AIR);
+    	if(!targets_g.isEmpty())
+    		doSendTargets(Position.GROUND);
+
+	}
+    
+    protected Position receiveTargets() throws GameActionException {
+    	Message[] messages = rc.getAllMessages();
+    	boolean air = false, ground = false;
+    	if (messages.length == 0)
+    		return Position.NONE;
+    	targets_a.clear();
+    	targets_g.clear();
+		for (Message m : messages) {
+			if(m.ints.length == 2 && m.ints[0] == rc.getTeam().hashCode()) {
+				for (MapLocation l : m.locations) {
+					if(m.ints[1] == 0) {
+						air = true;					
+						targets_a.add(l);
+					} else {
+						ground = true;
+						targets_g.add(l);
+					}
+				}
+			}
+		}
+		if(ground && !air) return Position.GROUND;
+		else if(!ground && air) return Position.AIR;
+		else return Position.BOTH;
+    }
+    
 }
