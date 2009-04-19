@@ -15,6 +15,7 @@ public abstract class RobotBase {
     protected int a_archons = 0;
     protected int a_workers = 0;
     protected int a_soldiers = 0;
+    protected int a_cannons = 0;
 
     protected final HashSet<Robot> enemies = new HashSet<Robot>();
     protected final HashSet<Robot> e_nearby = new HashSet<Robot>();
@@ -23,6 +24,7 @@ public abstract class RobotBase {
     protected int e_archons = 0;
     protected int e_workers = 0;
     protected int e_soldiers = 0;
+    protected int e_cannons = 0;
         
     protected final HashMap<Robot, RobotInfo> r_info = new HashMap<Robot, RobotInfo>();
 
@@ -117,6 +119,7 @@ public abstract class RobotBase {
                             ++e_archons;
                             break;
                         case CANNON:
+                        	++e_cannons;
                             break;
                         case CHANNELER:
                             break;
@@ -136,6 +139,7 @@ public abstract class RobotBase {
                             ++a_archons;
                             break;
                         case CANNON:
+                        	++a_cannons;
                             break;
                         case CHANNELER:
                             break;

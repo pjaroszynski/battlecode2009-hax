@@ -8,7 +8,6 @@ public class Archon extends RobotBase {
     private MapLocation[] archons;
     private MapLocation flux_to_get;
     private int[] staticArchons = new int[6];    
-    private int spawned_soldiers = 0;
 
     
 
@@ -30,14 +29,14 @@ public class Archon extends RobotBase {
             sense();
             sendTargets();
             transfer();
-            if (e_nearby.size() > a_soldiers - 2 && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2) {
-                spawn(RobotType.SOLDIER);
-                spawned_soldiers++;
-            }
-            if(spawned_soldiers % 3 == 0 && e_nearby.size() > a_soldiers - 2 && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2)
+            if(state == State.DEFENCE 
+            		&& a_soldiers > 2 * a_cannons && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2)
             {
             	spawn(RobotType.CANNON); 
-            }         
+            }
+            if (state == State.DEFENCE && rc.getEnergonLevel() > rc.getMaxEnergonLevel() / 2) {
+                spawn(RobotType.SOLDIER);
+            }                     
         }
         
         if(!e_nearby.isEmpty()) {
