@@ -29,6 +29,18 @@ public class Worker extends RobotBase {
         while (rc.isMovementActive()) {
             rc.yield();
         }
+        
+        //help in DEFENCE
+        receiveTargets();
+        if(targets_a.size() + targets_g.size() > 2)
+        {
+        	rc.transform(RobotType.CANNON);
+        	RobotBase robot = new Cannon(rc);
+        	try {
+                robot.play();
+            } catch (GameActionException e) {}
+        }
+        
         switch (state) {
             case SEARCH:
                 search();
